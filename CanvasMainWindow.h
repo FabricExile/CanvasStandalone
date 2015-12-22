@@ -29,6 +29,8 @@ using namespace FabricUI;
 
 class MainWindow;
 class QUndoView;
+class VETreeWidget;
+class BaseModelItem;
 
 class MainWindowEventFilter : public QObject
 {
@@ -91,6 +93,8 @@ private slots:
 signals:
   void contentChanged();
 
+  void modelChanged(BaseModelItem* model);
+
 protected:
 
   void closeEvent( QCloseEvent *event );
@@ -115,7 +119,10 @@ private:
   FabricCore::RTVal m_evalContext;
   DFG::PresetTreeWidget * m_treeWidget;
   DFG::DFGWidget * m_dfgWidget;
-  DFG::DFGValueEditor * m_dfgValueEditor;
+  //DFG::DFGValueEditor * m_dfgValueEditor;
+
+  VETreeWidget* m_dfgValueEditor;
+
   FabricUI::GraphView::Graph * m_setGraph;
   Viewports::GLViewportWidget * m_viewport;
   DFG::DFGLogWidget * m_logWidget;

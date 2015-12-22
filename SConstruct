@@ -7,7 +7,7 @@ import os, platform, sys
 thirdpartyDirs = {
   'FABRIC_DIR': "Should point to Fabric Engine's installation folder.",
   'QT_DIR': "Should point to the root of Qt folder.",
-  'FABRIC_UI_DIR': "Should point to the root of FabricUI repository checkout.",
+ # 'FABRIC_UI_DIR': "Should point to the root of FabricUI repository checkout.",
 }
 
 buildType = 'Release'
@@ -31,16 +31,18 @@ for thirdpartyDir in thirdpartyDirs:
   if not os.environ.has_key(thirdpartyDir):
     raise Exception(thirdpartyDir+' env variable not defined. '+thirdpartyDirs[thirdpartyDir])
 
-env.Append(CPPPATH = [os.path.join(os.environ['FABRIC_UI_DIR'], 'stage', 'include')])
-env.Append(CPPPATH = [os.path.join(os.environ['FABRIC_UI_DIR'], 'stage', 'include', 'FabricUI')])
+#env.Append(CPPPATH = [os.path.join(os.environ['FABRIC_UI_DIR'], 'stage', 'include')])
+#env.Append(CPPPATH = [os.path.join(os.environ['FABRIC_UI_DIR'], 'stage', 'include', 'FabricUI')])
 env.Append(LIBPATH = [os.path.join(os.environ['FABRIC_DIR'], 'lib')])
-env.Append(LIBPATH = [os.path.join(os.environ['FABRIC_UI_DIR'], 'stage', 'lib')])
+#env.Append(LIBPATH = [os.path.join(os.environ['FABRIC_UI_DIR'], 'stage', 'lib')])
 env.Append(CPPPATH = [os.path.join(os.environ['FABRIC_DIR'], 'include')])
 env.Append(CPPPATH = [os.path.join(os.environ['FABRIC_DIR'], 'include', 'FabricServices')])
+env.Append(CPPPATH = [os.path.join(os.environ['FABRIC_DIR'], 'include', 'FabricUI')])
 env.Append(CPPDEFINES = ['FEC_SHARED'])
 
 # Fabric Engine libraries
 env.Append(LIBS = ['FabricCore-2.0'])
+env.Append(LIBS = ['ValueEditor'])
 if platform.system().lower().startswith('win'):
   env.Append(LIBS = ['FabricServices-MSVC-'+env['MSVC_VERSION']+'-mt'])
 else:
@@ -119,5 +121,23 @@ sources += Flatten(env.GlobQObjectSources('*.h'))
 canvasFiles = env.Program('canvas', sources)
 canvasAlias = env.Alias('canvas', canvasFiles)
 
+cs = []
+for s in sources:
+  cs.append(str(s))
+print cs
+
+hs = []
+for s in headers:
+  hs.append(str(s))
+
 env.Default(canvasAlias)
 
+if platform.system() == 'Windows':
+  # Build a VS project to go along with this dll
+  # We can use this for debugging the project later.
+  res = env.MSVSProject(target = 'canvas' + env['MSVSPROJECTSUFFIX'],
+                  srcs = cs,
+                  incs = hs,
+                  buildtarget = canvasFiles[0],
+                  variant = 'Debug|x64')
+  print res

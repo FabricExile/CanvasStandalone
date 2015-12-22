@@ -26,6 +26,8 @@
 
 #include <sstream>
 
+#include <ValueEditor/VETreeWidget.h>
+
 FabricServices::Persistence::RTValToJSONEncoder sRTValEncoder;
 FabricServices::Persistence::RTValFromJSONDecoder sRTValDecoder;
 
@@ -291,11 +293,11 @@ MainWindow::MainWindow(
     QObject::connect(m_dfgWidget, SIGNAL(newPresetSaved(QString)), m_treeWidget, SLOT(refresh()));
 
     // value editor
-    m_dfgValueEditor =
-      new DFG::DFGValueEditor(
-        m_dfgWidget->getUIController(),
-        config
-        );
+    m_dfgValueEditor = new VETreeWidget();
+      // new DFG::DFGValueEditor(
+      //   m_dfgWidget->getUIController(),
+      //   config
+      //   );
     QDockWidget *dfgValueEditorDockWidget =
       new QDockWidget(
         "Value Editor",
@@ -350,13 +352,18 @@ MainWindow::MainWindow(
       this, SLOT(onDirty())
       );
 
-    QObject::connect(
-      m_dfgWidget->getDFGController(), SIGNAL(bindingChanged(FabricCore::DFGBinding const &)),
-      m_dfgValueEditor, SLOT(setBinding(FabricCore::DFGBinding const &))
-      );
-    QObject::connect(
-      m_dfgWidget->getDFGController(), SIGNAL(nodeRemoved(FTL::CStrRef)),
-      m_dfgValueEditor, SLOT(onNodeRemoved(FTL::CStrRef))
+    //QObject::connect(
+    //  m_dfgWidget->getDFGController(), SIGNAL(bindingChanged(FabricCore::DFGBinding const &)),
+    //  m_dfgValueEditor, SLOT(setBinding(FabricCore::DFGBinding const &))
+    //  );
+    //QObject::connect(
+    //  m_dfgWidget->getDFGController(), SIGNAL(nodeRemoved(FTL::CStrRef)),
+    //  m_dfgValueEditor, SLOT(onNodeRemoved(FTL::CStrRef))
+    //  );
+
+    connect(
+      this, SIGNAL(modelChanged(BaseModelitem*)),
+      m_dfgValueEditor, SLOT(onModelChanged(BaseModelitem*))
       );
 
     QObject::connect(
@@ -603,7 +610,7 @@ void MainWindow::onValueChanged()
     //   FabricCore::RTVal argVal = graph.getWrappedCoreBinding().getArgValue(ports[i]->getName());
     //   m_dfgWidget->getUIController()->log(argVal.getJSON().getStringCString());
     // }
-    m_dfgValueEditor->updateOutputs();
+    //m_dfgValueEditor->updateOutputs();
   }
   catch(FabricCore::Exception e)
   {
@@ -697,6 +704,8 @@ void MainWindow::onGraphSet(FabricUI::GraphView::Graph * graph)
   }
 }
 
+//void 
+
 void MainWindow::onNodeInspectRequested(
   FabricUI::GraphView::Node *node
   )
@@ -707,12 +716,12 @@ void MainWindow::onNodeInspectRequested(
   FabricUI::DFG::DFGController *dfgController =
     m_dfgWidget->getUIController();
 
-  m_dfgValueEditor->setNode(
-    dfgController->getBinding(),
-    dfgController->getExecPath(),
-    dfgController->getExec(),
-    node->name()
-    );
+  // m_dfgValueEditor->setNode(
+  //   dfgController->getBinding(),
+  //   dfgController->getExecPath(),
+  //   dfgController->getExec(),
+  //   node->name()
+  //   );
 }
 
 void MainWindow::onNodeEditRequested(
@@ -727,10 +736,10 @@ void MainWindow::onSidePanelInspectRequested()
   FabricUI::DFG::DFGController *dfgController =
     m_dfgWidget->getUIController();
 
-  if ( dfgController->isViewingRootGraph() )
-    m_dfgValueEditor->setBinding( dfgController->getBinding() );
-  else
-    m_dfgValueEditor->clear();
+  // if ( dfgController->isViewingRootGraph() )
+  //   m_dfgValueEditor->setBinding( dfgController->getBinding() );
+  // else
+  //   m_dfgValueEditor->clear();
 }
 
 void MainWindow::onNewGraph()
@@ -751,7 +760,7 @@ void MainWindow::onNewGraph()
     FabricCore::DFGBinding binding = dfgController->getBinding();
     binding.deallocValues();
 
-    m_dfgValueEditor->clear();
+    //m_dfgValueEditor->clear();
 
     m_host.flushUndoRedo();
     m_qUndoStack.clear();
@@ -823,7 +832,7 @@ void MainWindow::loadGraph( QString const &filePath )
     FabricCore::DFGBinding binding = dfgController->getBinding();
     binding.deallocValues();
 
-    m_dfgValueEditor->clear();
+    //m_dfgValueEditor->clear();
 
     m_host.flushUndoRedo();
     m_qUndoStack.clear();
