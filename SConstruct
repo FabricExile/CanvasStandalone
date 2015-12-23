@@ -61,6 +61,14 @@ if platform.system().lower().startswith('win'):
   qtFlags['LIBPATH'] = [os.path.join(qtDir, 'lib')]
   qtFlags['LIBS'] = ['QtCore'+suffix, 'QtGui'+suffix, 'QtOpenGL'+suffix]
   qtMOC = os.path.join(qtDir, 'bin', 'moc.exe')
+
+  # Produce one .PDB file per .OBJ when compiling, then merge them when linking.
+  # Doing this enables parallel builds to work properly (the -j parameter).
+  # See: http://www.scons.org/doc/HTML/scons-man.html section CCPDBFLAGS
+  # 
+  env['CCPDBFLAGS'] = '/Zi /Fd${TARGET}.pdb'
+  env.Append(PDB  = '${TARGET.base}.pdb')
+  
 elif platform.system().lower().startswith('dar'):
   qtFlags['CPPPATH'] = ['/usr/local/include']
   qtFlags['FRAMEWORKPATH'] = ['/usr/local/lib']
