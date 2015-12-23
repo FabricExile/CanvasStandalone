@@ -27,6 +27,8 @@
 #include <sstream>
 
 #include <ValueEditor/VETreeWidget.h>
+#include <ValueEditor/BaseModelItem.h>
+#include <ValueEditor/QVariantRTVal.h>
 
 FabricServices::Persistence::RTValToJSONEncoder sRTValEncoder;
 FabricServices::Persistence::RTValFromJSONDecoder sRTValDecoder;
@@ -361,10 +363,10 @@ MainWindow::MainWindow(
     //  m_dfgValueEditor, SLOT(onNodeRemoved(FTL::CStrRef))
     //  );
 
-    connect(
-      this, SIGNAL(modelChanged(BaseModelitem*)),
-      m_dfgValueEditor, SLOT(onModelChanged(BaseModelitem*))
-      );
+    bool var = connect(
+        this, SIGNAL( modelChanged( BaseModelItem* ) ),
+        m_dfgValueEditor, SLOT( onSetModelItem( BaseModelItem* ) )
+        );
 
     QObject::connect(
       m_dfgWidget->getTabSearchWidget(), SIGNAL(enabled(bool)),
@@ -382,8 +384,7 @@ MainWindow::MainWindow(
 
     // populate the menu bar
     QObject::connect(
-      m_dfgWidget, 
-      SIGNAL(additionalMenuActionsRequested(QString, QMenu*, bool)), 
+      m_dfgWidget, SIGNAL(additionalMenuActionsRequested(QString, QMenu*, bool)), 
       this, SLOT(onAdditionalMenuActionsRequested(QString, QMenu *, bool))
       );
     m_dfgWidget->populateMenuBar(menuBar());
@@ -704,7 +705,114 @@ void MainWindow::onGraphSet(FabricUI::GraphView::Graph * graph)
   }
 }
 
-//void 
+// class RTValModelItem : public BaseViewItem
+// {
+//   DFGExec m_exec;
+//   const char* m_name;
+
+// public:
+//   RTValModelItem(const DFGExec& exec, const char* portName)
+//   : m_exec(exec)
+//   , m_name(portName)
+//   {} 
+// };
+
+class PortModelItem : public BaseModelItem
+{
+  FabricCore::DFGBinding m_binding;
+  const char* m_name;
+
+public:
+  PortModelItem(const FabricCore::DFGBinding& binding, const char* portName)
+  : m_binding( binding )
+  , m_name(portName)
+  {}
+
+  // Every port has exactly 1 child - its RTValue
+  size_t NumChildren() { return 0; }
+
+  virtual BaseModelItem* GetChild(size_t i) { return NULL; };
+
+  virtual QString GetName() { return QString(m_name); };
+
+  virtual FTL::JSONObject* GetMetadata() 
+  {
+    //m_binding.getMetadata();
+    return NULL;
+    //m_binding.get_
+      //m_exec.getPortMetadata(m_name); 
+  }
+
+  virtual QVariant GetValue() 
+  {
+    //FabricCore::DFGBinding binding = m_binding.bind();
+    FabricCore::RTVal val = m_binding.getArgValue( m_name );
+    if (val.isValid())
+    {
+      return QVariant::fromValue<FabricCore::RTVal>( val );
+    }
+    return QString("|Invalid Port|");
+  };
+};
+
+class BindingModelItem : public BaseModelItem
+{
+private:
+
+  FabricCore::DFGBinding m_binding;
+  std::vector<BaseModelItem*> m_children;
+
+public:
+  BindingModelItem(FabricCore::DFGBinding& binding) : m_binding( binding ) {}
+  ~BindingModelItem() {}
+
+  size_t NumChildren() { return m_binding.getExec().getExecPortCount(); }
+
+  virtual BaseModelItem* GetChild(size_t i)
+  {
+    if (m_children.size() <= i) 
+      m_children.resize(i + 1, NULL);
+
+    if (m_children[i] == NULL)
+    {
+      const char* portName = m_binding.getExec().getExecPortName(i);
+      m_children[i] = new PortModelItem(m_binding, portName);
+    }
+    return m_children[i];
+  }
+
+  virtual QString GetName() 
+  {
+    const char* title = m_binding.getExec().getTitle();
+    if (title && *title != '\0')
+      return title;
+    return QString("[Exec]");
+  };
+
+  virtual FTL::JSONObject* GetMetadata() { return NULL; }
+
+  virtual QVariant GetValue() { return QString( m_binding.getExec().getTitle()); };
+
+public slots:
+
+  // The BaseModelItem is responsible for receiving values back from 
+  // the the UI and setting them on the core object.
+  // It is guaranteed that the QVariant value here will be equivalent
+  // to the QVariant returned from GetValue
+  virtual void onViewValueChanged(
+    QVariant const& var,
+    bool commit
+    )
+  {
+    if (commit)
+    {
+      QByteArray asciiArr = var.toString().toAscii();
+      //m_binding.setTitle(asciiArr.data());
+      emit modelValueChanged(var);
+    }
+  }
+};
+
 
 void MainWindow::onNodeInspectRequested(
   FabricUI::GraphView::Node *node
@@ -716,6 +824,10 @@ void MainWindow::onNodeInspectRequested(
   FabricUI::DFG::DFGController *dfgController =
     m_dfgWidget->getUIController();
 
+  FabricCore::DFGExec exec = dfgController->getExec();
+
+  BindingModelItem* newModel = new BindingModelItem( dfgController->getBinding() );
+  emit modelChanged(newModel);
   // m_dfgValueEditor->setNode(
   //   dfgController->getBinding(),
   //   dfgController->getExecPath(),
@@ -735,6 +847,11 @@ void MainWindow::onSidePanelInspectRequested()
 {
   FabricUI::DFG::DFGController *dfgController =
     m_dfgWidget->getUIController();
+
+  FabricCore::DFGExec exec = dfgController->getExec();
+
+  BindingModelItem* newModel = new BindingModelItem( dfgController->getBinding() );
+  emit modelChanged(newModel);
 
   // if ( dfgController->isViewingRootGraph() )
   //   m_dfgValueEditor->setBinding( dfgController->getBinding() );
