@@ -31,6 +31,7 @@ class MainWindow;
 class QUndoView;
 class VETreeWidget;
 class BaseModelItem;
+class BindingModelItem;
 
 class MainWindowEventFilter : public QObject
 {
@@ -51,6 +52,7 @@ class MainWindow : public DFG::DFGMainWindow
 
   friend class MainWindowEventFilter;
   
+  BindingModelItem* m_modelRoot;
 public:
 
   MainWindow(
@@ -69,6 +71,11 @@ public slots:
 
   void onDirty();
   void onValueChanged();
+  // Arg-specific updates for when arg only changes.
+  void onArgInserted(int index, const char* name, const char* type);
+  void onArgTypeChanged(int index, const char* name, const char* newType);
+  void onArgRemoved(int index, const char* name);
+  //
   void onStructureChanged();
   void onGraphSet(FabricUI::GraphView::Graph * graph);
   void onNodeInspectRequested(FabricUI::GraphView::Node * node);
@@ -93,8 +100,11 @@ private slots:
 signals:
   void contentChanged();
 
-  void modelChanged(BaseModelItem* model);
+  void replaceModelRoot(BaseModelItem* model);
 
+  void modelItemInserted(BaseModelItem* parent, int index, const char* childName);
+  void modelItemTypeChange(BaseModelItem* changingItem, const char* newType);
+  void modelItemRemoved(BaseModelItem* removedItem);
 protected:
 
   void closeEvent( QCloseEvent *event );
