@@ -75,6 +75,7 @@ public slots:
   void onArgInserted(int index, const char* name, const char* type);
   void onArgTypeChanged(int index, const char* name, const char* newType);
   void onArgRemoved(int index, const char* name);
+  void onArgsReordered( const FTL::JSONArray* newOrder );
   //
   void onStructureChanged();
   void onGraphSet(FabricUI::GraphView::Graph * graph);
@@ -105,6 +106,8 @@ signals:
   void modelItemInserted(BaseModelItem* parent, int index, const char* childName);
   void modelItemTypeChange(BaseModelItem* changingItem, const char* newType);
   void modelItemRemoved(BaseModelItem* removedItem);
+  void modelItemChildrenReordered( BaseModelItem* parent, const QList<int>& newOrder );
+
 protected:
 
   void closeEvent( QCloseEvent *event );

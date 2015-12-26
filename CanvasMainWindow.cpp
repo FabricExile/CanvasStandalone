@@ -87,19 +87,23 @@ public:
 
   virtual BaseModelItem* GetChild(size_t i)
   {
-    if (m_children.size() > i)
-      return m_children[i];
-    return NULL;
-
-    //if (m_children.size() <= i) 
-    //  m_children.resize(i + 1, NULL);
-
-    //if (m_children[i] == NULL)
-    //{
-    //  const char* portName = m_binding.getExec().getExecPortName(i);
-    //  m_children[i] = new PortModelItem(m_binding, portName);
-    //}
-    //return m_children[i];
+    //if (m_children.size() > i)
+    //  return m_children[i];
+    //return NULL;
+    if (i <= m_children.size())
+    {
+      int maxChildren = m_binding.getExec().getExecPortCount();
+      if (i >= maxChildren)
+        return NULL;
+      m_children.resize( maxChildren, NULL );
+    }
+    
+    if (m_children[i] == NULL)
+    {
+      const char* portName = m_binding.getExec().getExecPortName(i);
+      m_children[i] = new PortModelItem(m_binding, portName);
+    }
+    return m_children[i];
   }
 
   virtual QString GetName() 
@@ -159,6 +163,17 @@ public:
       //emit modelValueChanged(var);
     }
   }
+
+  void reorderChildren( QList<int> newIntOrder )
+  {
+    assert( newIntOrder.size() == m_children.size() );
+    std::vector<BaseModelItem*> children;
+    for (int i = 0; i < children.size(); i++)
+      children[i] = m_children[newIntOrder[i]];
+    m_children = children;
+  }
+
+
 };
 
 //////////////////////////////////////////////////
@@ -496,6 +511,15 @@ MainWindow::MainWindow(
       this, SLOT(onValueChanged())
       );
     QObject::connect(
+      m_dfgWidget->getUIController(), SIGNAL( argsReordered( const FTL::JSONArray* ) ),
+      this, SLOT( onArgsReordered( const FTL::JSONArray* ) )
+      );
+    QObject::connect(
+      this, SIGNAL( modelItemChildrenReordered( BaseModelItem* , const QList<int>& ) ),
+      m_dfgValueEditor, SLOT( onModelItemChildrenReordered( BaseModelItem* , const QList<int>& ) )
+      );
+    
+    QObject::connect(
       m_dfgWidget->getUIController(), SIGNAL(defaultValuesChanged()),
       this, SLOT(onValueChanged())
       );
@@ -798,6 +822,22 @@ void MainWindow::onArgRemoved(int index, const char* name)
   BaseModelItem* removedChild = m_modelRoot->GetChild(index);
   emit modelItemRemoved(removedChild);
   m_modelRoot->argRemoved(index, name);
+}
+
+void MainWindow::onArgsReordered( const FTL::JSONArray* newOrder )
+{
+  if (newOrder == NULL || m_modelRoot == NULL)
+    return;
+
+  // The array will specify the new order of our base arrays children
+  // We will need to keep track of 
+  QList<int> newIntOrder;
+  newIntOrder.reserve( newOrder->size() );
+  for (int i = 0; i < newOrder->size(); i++)
+    newIntOrder.push_back( newOrder->get( i )->getSInt32Value() );
+
+  m_modelRoot->reorderChildren( newIntOrder );
+  emit modelItemChildrenReordered( m_modelRoot, newIntOrder );
 }
 
 void MainWindow::onStructureChanged()
