@@ -29,12 +29,13 @@ public:
 //////////////////////////////////////////////////////////////////////////
 // The Root-level model item for 
 // 
+typedef std::vector<BaseModelItem*> ChildVec;
 class BindingModelItem : public BaseModelItem
 {
 private:
 
   FabricCore::DFGBinding m_binding;
-  std::vector<BaseModelItem*> m_children;
+  ChildVec m_children;
 
 public:
   BindingModelItem(FabricCore::DFGBinding& binding);

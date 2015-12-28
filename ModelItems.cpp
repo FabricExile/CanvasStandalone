@@ -140,15 +140,14 @@ void BindingModelItem::argTypeChanged( int index, const char* name, const char* 
 
 void BindingModelItem::argRemoved( int index, const char* name )
 {
-  BaseModelItem* pChild = GetChild( name );
-  assert( pChild != NULL );
-  if (pChild != NULL)
+  for (ChildVec::iterator itr = m_children.begin(); itr != m_children.end(); itr++)
   {
-    assert( pChild->GetName() == name );
-    pChild->emitRemoved();
-
-    delete pChild;
-    m_children.erase( m_children.begin() + index );
+    if ((*itr)->GetName() == name)
+    {
+      delete *itr;
+      m_children.erase( itr );
+      break;
+    }
   }
 }
 
