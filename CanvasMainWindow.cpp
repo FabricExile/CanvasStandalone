@@ -3,6 +3,7 @@
 //
 
 #include "CanvasMainWindow.h"
+#include "ModelItems.h"
 
 #include <FabricServices/Persistence/RTValToJSONEncoder.hpp>
 #include <FabricServices/Persistence/RTValFromJSONDecoder.hpp>
@@ -27,154 +28,10 @@
 #include <sstream>
 
 #include <ValueEditor/VETreeWidget.h>
-#include <ValueEditor/BaseModelItem.h>
-#include <ValueEditor/QVariantRTVal.h>
+
 
 FabricServices::Persistence::RTValToJSONEncoder sRTValEncoder;
 FabricServices::Persistence::RTValFromJSONDecoder sRTValDecoder;
-
-//////////////////////////////////////////
-class PortModelItem : public BaseModelItem
-{
-  FabricCore::DFGBinding m_binding;
-  std::string m_name;
-
-public:
-  PortModelItem(const FabricCore::DFGBinding& binding, const char* portName)
-  : m_binding( binding )
-  , m_name(portName)
-  {}
-
-  // Every port has exactly 1 child - its RTValue
-  size_t NumChildren() { return 0; }
-
-  virtual BaseModelItem* GetChild(size_t i) { return NULL; };
-
-  virtual QString GetName() { return QString( m_name.c_str() ); };
-
-  virtual FTL::JSONObject* GetMetadata() 
-  {
-    //m_binding.getMetadata();
-    return NULL;
-    //m_binding.get_
-      //m_exec.getPortMetadata(m_name); 
-  }
-
-  virtual QVariant GetValue() 
-  {
-    //FabricCore::DFGBinding binding = m_binding.bind();
-    FabricCore::RTVal val = m_binding.getArgValue( m_name.c_str() );
-    if (val.isValid())
-    {
-      return QVariant::fromValue<FabricCore::RTVal>( val );
-    }
-    return QString("|Invalid Port|");
-  };
-};
-
-class BindingModelItem : public BaseModelItem
-{
-private:
-
-  FabricCore::DFGBinding m_binding;
-  std::vector<BaseModelItem*> m_children;
-
-public:
-  BindingModelItem(FabricCore::DFGBinding& binding) : m_binding( binding ) {}
-  ~BindingModelItem() {}
-
-  size_t NumChildren() { return m_binding.getExec().getExecPortCount(); }
-
-  virtual BaseModelItem* GetChild(size_t i)
-  {
-    //if (m_children.size() > i)
-    //  return m_children[i];
-    //return NULL;
-    if (i <= m_children.size())
-    {
-      int maxChildren = m_binding.getExec().getExecPortCount();
-      if (i >= maxChildren)
-        return NULL;
-      m_children.resize( maxChildren, NULL );
-    }
-    
-    if (m_children[i] == NULL)
-    {
-      const char* portName = m_binding.getExec().getExecPortName(i);
-      m_children[i] = new PortModelItem(m_binding, portName);
-    }
-    return m_children[i];
-  }
-
-  virtual QString GetName() 
-  {
-    const char* title = m_binding.getExec().getTitle();
-    if (title && *title != '\0')
-      return title;
-    return QString("[Exec]");
-  };
-
-  virtual FTL::JSONObject* GetMetadata() { return NULL; }
-
-  virtual QVariant GetValue() { return QString( m_binding.getExec().getTitle()); };
-
-  //// BindingModelItem assumes it is the root item,
-  //// and index always refers to an index in it's 
-  //// list of children.
-  void argInserted(int index, const char* name, const char* type)
-  {
-    m_children.insert(m_children.begin() + index, new PortModelItem(m_binding, name));
-  }
-
-  void argTypeChanged(int index, const char* name, const char* newType)
-  {
-   BaseModelItem* pChild = GetChild(index);
-   assert(pChild != NULL);
-   if (pChild != NULL)
-   {
-     assert(pChild->GetName() == name);
-     // TODO:  What?  Reset the QVariant...
-   }
-  }
-
-  void argRemoved(int index, const char* name)
-  {
-    BaseModelItem* pChild = GetChild(index);
-    assert(pChild != NULL);
-    if (pChild != NULL)
-    {
-      assert(pChild->GetName() == name);
-      pChild->emitRemoved();
-
-      delete pChild;
-      m_children.erase(m_children.begin() + index);
-    }
-  }
-
-  virtual void onViewValueChanged(
-    QVariant const& var,
-    bool commit
-    )
-  {
-    if (commit)
-    {
-      QByteArray asciiArr = var.toString().toAscii();
-      m_binding.getExec().setTitle(asciiArr.data());
-      //emit modelValueChanged(var);
-    }
-  }
-
-  void reorderChildren( QList<int> newIntOrder )
-  {
-    assert( newIntOrder.size() == m_children.size() );
-    std::vector<BaseModelItem*> children;
-    for (int i = 0; i < children.size(); i++)
-      children[i] = m_children[newIntOrder[i]];
-    m_children = children;
-  }
-
-
-};
 
 //////////////////////////////////////////////////
 
@@ -811,7 +668,7 @@ void MainWindow::onArgTypeChanged(int index, const char* name, const char* newTy
     return;
 
   m_modelRoot->argTypeChanged(index, name, newType);
-  BaseModelItem* changingChild = m_modelRoot->GetChild(index);
+  BaseModelItem* changingChild = m_modelRoot->GetChild(name);
   emit modelItemTypeChange(changingChild, newType);
 }
 void MainWindow::onArgRemoved(int index, const char* name)
@@ -819,7 +676,7 @@ void MainWindow::onArgRemoved(int index, const char* name)
   if (m_modelRoot == NULL)
     return;
 
-  BaseModelItem* removedChild = m_modelRoot->GetChild(index);
+  BaseModelItem* removedChild = m_modelRoot->GetChild(name);
   emit modelItemRemoved(removedChild);
   m_modelRoot->argRemoved(index, name);
 }
@@ -836,7 +693,7 @@ void MainWindow::onArgsReordered( const FTL::JSONArray* newOrder )
   for (int i = 0; i < newOrder->size(); i++)
     newIntOrder.push_back( newOrder->get( i )->getSInt32Value() );
 
-  m_modelRoot->reorderChildren( newIntOrder );
+  //m_modelRoot->reorderChildren( newIntOrder );
   emit modelItemChildrenReordered( m_modelRoot, newIntOrder );
 }
 
