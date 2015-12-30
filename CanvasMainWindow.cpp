@@ -662,6 +662,7 @@ void MainWindow::onArgInserted(int index, const char* name, const char* type)
   m_modelRoot->argInserted(index, name, type);
   emit modelItemInserted(m_modelRoot, index, name);
 }
+
 void MainWindow::onArgTypeChanged(int index, const char* name, const char* newType)
 {
   if (m_modelRoot == NULL)
@@ -793,9 +794,11 @@ void MainWindow::onNodeInspectRequested(
   FabricUI::DFG::DFGController *dfgController =
     m_dfgWidget->getUIController();
 
+  //std::string path = dfgController->getExecPath();
+  //path += node->title();
   FabricCore::DFGExec exec = dfgController->getExec();
-
-  m_modelRoot = new BindingModelItem( dfgController->getBinding() );
+  FabricCore::DFGExec subExec = exec.getSubExec( node->title().c_str() );
+  m_modelRoot = new ExecModelItem( subExec );
   emit replaceModelRoot(m_modelRoot);
   // m_dfgValueEditor->setNode(
   //   dfgController->getBinding(),
@@ -817,15 +820,10 @@ void MainWindow::onSidePanelInspectRequested()
   FabricUI::DFG::DFGController *dfgController =
     m_dfgWidget->getUIController();
 
-  FabricCore::DFGExec exec = dfgController->getExec();
+  FabricCore::DFGBinding binding = dfgController->getBinding();
 
-  m_modelRoot = new BindingModelItem( dfgController->getBinding() );
+  m_modelRoot = new BindingModelItem( binding );
   emit replaceModelRoot(m_modelRoot);
-
-  // if ( dfgController->isViewingRootGraph() )
-  //   m_dfgValueEditor->setBinding( dfgController->getBinding() );
-  // else
-  //   m_dfgValueEditor->clear();
 }
 
 void MainWindow::onNewGraph()

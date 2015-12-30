@@ -31,7 +31,7 @@ class MainWindow;
 class QUndoView;
 class VETreeWidget;
 class BaseModelItem;
-class BindingModelItem;
+class ExecModelItem;
 
 class MainWindowEventFilter : public QObject
 {
@@ -52,7 +52,7 @@ class MainWindow : public DFG::DFGMainWindow
 
   friend class MainWindowEventFilter;
   
-  BindingModelItem* m_modelRoot;
+  ExecModelItem* m_modelRoot;
 public:
 
   MainWindow(
