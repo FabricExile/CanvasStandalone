@@ -83,6 +83,9 @@ public:
   virtual FTL::JSONObject* GetMetadata();
 
   virtual QVariant GetValue();
+
+  virtual void onViewValueChanged( QVariant const&, bool ) override;
+
 };
 
 class ArgModelItem : public PortModelItem
@@ -94,4 +97,7 @@ public:
 
   ArgModelItem( const FabricCore::DFGBinding& binding, QString portName );
   virtual QVariant GetValue();
+
+  virtual void onViewValueChanged( QVariant const&, bool ) override;
+
 };

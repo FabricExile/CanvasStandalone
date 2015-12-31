@@ -112,6 +112,17 @@ bool MainWindowEventFilter::eventFilter(
   return QObject::eventFilter(object, event);
 };
 
+//////////////////////////////////////////////////////////////////////////
+
+void SetStylesheet( const char* filename )
+{
+  QFile File( filename );
+  File.open( QFile::ReadOnly );
+  QString StyleSheet = QLatin1String( File.readAll() );
+
+  qApp->setStyleSheet( StyleSheet );
+}
+
 MainWindow::MainWindow(
   QSettings *settings,
   bool unguarded
@@ -364,8 +375,8 @@ MainWindow::MainWindow(
       this, SLOT(onStructureChanged())
       );
     QObject::connect(
-      m_dfgWidget->getUIController(), SIGNAL(argValuesChanged()),
-      this, SLOT(onValueChanged())
+      m_dfgWidget->getUIController(), SIGNAL(argValuesChanged(int, const char*)),
+      this, SLOT(onValueChanged( int, const char* ))
       );
     QObject::connect(
       m_dfgWidget->getUIController(), SIGNAL( argsReordered( const FTL::JSONArray* ) ),
@@ -377,8 +388,8 @@ MainWindow::MainWindow(
       );
     
     QObject::connect(
-      m_dfgWidget->getUIController(), SIGNAL(defaultValuesChanged()),
-      this, SLOT(onValueChanged())
+      m_dfgWidget->getUIController(), SIGNAL(defaultValuesChanged( int, const char* )),
+      this, SLOT(onValueChanged( int, const char* ))
       );
     QObject::connect(
       m_dfgWidget, SIGNAL(nodeInspectRequested(FabricUI::GraphView::Node*)),
@@ -455,6 +466,10 @@ MainWindow::MainWindow(
   {
     throw e;
   }
+  
+  // Load CSS last to ensure styles are applied
+  // to already-created items
+  SetStylesheet( "styles.qss" );
 
   installEventFilter(new MainWindowEventFilter(this));
 }
@@ -628,25 +643,29 @@ void MainWindow::onDirty()
 {
   m_dfgWidget->getUIController()->execute();
 
-  onValueChanged();
+  onValueChanged( -1, NULL );
 
   emit contentChanged();
 }
 
-void MainWindow::onValueChanged()
+void MainWindow::onValueChanged(int index, const char* name)
 {
   try
   {
-    // FabricCore::DFGExec graph = m_dfgWidget->getUIController()->getGraph();
-    // DFGWrapper::ExecPortList ports = graph->getPorts();
-    // for(size_t i=0;i<ports.size();i++)
-    // {
-    //   if(ports[i]->getPortType() == FabricCore::DFGPortType_Out)
-    //     continue;
-    //   FabricCore::RTVal argVal = graph.getWrappedCoreBinding().getArgValue(ports[i]->getName());
-    //   m_dfgWidget->getUIController()->log(argVal.getJSON().getStringCString());
-    // }
-    //m_dfgValueEditor->updateOutputs();
+    if (name == NULL)
+    {
+      // TODO: Update all children
+      //int nChildren = m_modelRoot->NumChildren();
+    }
+    else
+    {
+      BaseModelItem* changingChild = m_modelRoot->GetChild( name );
+      if (changingChild != NULL)
+      {
+        QVariant val = changingChild->GetValue();
+        changingChild->emitModelValueChanged( val );
+      }
+    }
   }
   catch(FabricCore::Exception e)
   {

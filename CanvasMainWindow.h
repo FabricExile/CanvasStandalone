@@ -70,7 +70,7 @@ public:
 public slots:
 
   void onDirty();
-  void onValueChanged();
+  void onValueChanged( int index, const char* name );
   // Arg-specific updates for when arg only changes.
   void onArgInserted(int index, const char* name, const char* type);
   void onArgTypeChanged(int index, const char* name, const char* newType);

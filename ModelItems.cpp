@@ -199,6 +199,18 @@ QVariant PortModelItem::GetValue()
   return QString( "|Invalid Port|" );
 }
 
+void PortModelItem::onViewValueChanged( QVariant const& vars, bool commit)
+{
+  if (m_exec.hasSrcPort( m_cname.c_str() ))
+    return;
+
+  // If we have a resolved type, allow getting the default val
+
+  FabricCore::RTVal val = toRTVal( vars );
+  if (val.isValid())
+    m_exec.setPortDefaultValue( m_cname.c_str(), val, commit );
+}
+
 //////////////////////////////////////////////////////////////////////////
 ArgModelItem::ArgModelItem( const FabricCore::DFGBinding & binding, QString portName )
   : PortModelItem(binding.getExec(), portName)
@@ -214,4 +226,11 @@ QVariant ArgModelItem::GetValue()
     return QVariant::fromValue<FabricCore::RTVal>( val );
   }
   return QString( "|Invalid Port|" );
+}
+
+void ArgModelItem::onViewValueChanged( QVariant const& var, bool commit )
+{
+  FabricCore::RTVal val = toRTVal( var );
+  if (val.isValid())
+    m_binding.setArgValue( m_cname.c_str(), val, commit );
 }
