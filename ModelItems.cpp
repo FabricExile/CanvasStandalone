@@ -153,6 +153,16 @@ PortModelItem::PortModelItem( const FabricCore::DFGExec& exec, QString portName 
   , m_name( portName )
 {
   m_cname = m_name.toStdString();
+  assert( exec.haveExecPort( m_cname.c_str() ) );
+
+  // A debug port allows us to view the values
+  // as they are being sent through the graph
+  m_exec.addDebugNodePort( m_cname.data() );
+}
+
+PortModelItem::~PortModelItem()
+{
+  m_exec.removeDebugNodePort( m_cname.data() );
 }
 
 size_t PortModelItem::NumChildren()
@@ -180,21 +190,32 @@ FTL::JSONObject* PortModelItem::GetMetadata()
 
 QVariant PortModelItem::GetValue()
 {
-  // TODO: Find a way to show values of connected ports
-  if (m_exec.hasSrcPort( m_cname.c_str() ))
-    return QString( "<connected>" );
-
-  // If we have a resolved type, allow getting the default val
-  const char* ctype = m_exec.getExecPortResolvedType( m_cname.c_str() );
-  if (ctype != NULL)
+  try
   {
-    FabricCore::RTVal val = m_exec.getPortDefaultValue( m_cname.c_str(), ctype );
-    //FabricCore::DFGBinding binding = m_binding.bind();
-    //  FabricCore::RTVal val = m_exec.getArgValue( m_cname.c_str() );
-    if (val.isValid())
+    // TODO: Find a way to show values of connected ports
+    //if (m_exec.hasSrcPort( m_cname.c_str() ))
+    //  return QString( "<connected>" );
+
+    // If we have a resolved type, allow getting the default val
+    const char* ctype = m_exec.getExecPortResolvedType( m_cname.c_str() );
+    if (ctype != NULL)
     {
+      FabricCore::RTVal val = m_exec.getPortDefaultValue( m_cname.c_str(), ctype );
+      //FabricCore::DFGBinding binding = m_binding.bind();
+      //  FabricCore::RTVal val = m_exec.getArgValue( m_cname.c_str() );
+      if (val.isValid())
+      {
+        return QVariant::fromValue<FabricCore::RTVal>( val );
+      }
+    }
+    {
+      FabricCore::RTVal val = m_exec.getDebugNodePortValue( m_cname.data() );
       return QVariant::fromValue<FabricCore::RTVal>( val );
     }
+  }
+  catch (FabricCore::Exception* e)
+  {
+    printf( "[ERROR] %s", e->getDesc_cstr() );
   }
   return QString( "|Invalid Port|" );
 }

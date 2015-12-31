@@ -72,6 +72,7 @@ protected:
 
 public:
   PortModelItem( const FabricCore::DFGExec& exec, QString portName );
+  ~PortModelItem();
 
   // Every port has exactly 1 child - its RTValue
   size_t NumChildren();

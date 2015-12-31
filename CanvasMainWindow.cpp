@@ -813,18 +813,10 @@ void MainWindow::onNodeInspectRequested(
   FabricUI::DFG::DFGController *dfgController =
     m_dfgWidget->getUIController();
 
-  //std::string path = dfgController->getExecPath();
-  //path += node->title();
   FabricCore::DFGExec exec = dfgController->getExec();
   FabricCore::DFGExec subExec = exec.getSubExec( node->title().c_str() );
   m_modelRoot = new ExecModelItem( subExec );
   emit replaceModelRoot(m_modelRoot);
-  // m_dfgValueEditor->setNode(
-  //   dfgController->getBinding(),
-  //   dfgController->getExecPath(),
-  //   dfgController->getExec(),
-  //   node->name()
-  //   );
 }
 
 void MainWindow::onNodeEditRequested(
@@ -839,10 +831,20 @@ void MainWindow::onSidePanelInspectRequested()
   FabricUI::DFG::DFGController *dfgController =
     m_dfgWidget->getUIController();
 
-  FabricCore::DFGBinding binding = dfgController->getBinding();
+  std::string path = dfgController->getExecPath();
+  if (path.empty())
+  {
+    FabricCore::DFGBinding binding = dfgController->getBinding();
+    m_modelRoot = new BindingModelItem( binding );
+    emit replaceModelRoot( m_modelRoot );
+  }
+  else
+  {
+    FabricCore::DFGExec exec = dfgController->getExec();
+    m_modelRoot = new ExecModelItem( exec );
+    emit replaceModelRoot( m_modelRoot );
+  }
 
-  m_modelRoot = new BindingModelItem( binding );
-  emit replaceModelRoot(m_modelRoot);
 }
 
 void MainWindow::onNewGraph()
