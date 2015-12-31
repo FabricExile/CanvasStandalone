@@ -205,10 +205,13 @@ void PortModelItem::onViewValueChanged( QVariant const& vars, bool commit)
     return;
 
   // If we have a resolved type, allow getting the default val
-
-  FabricCore::RTVal val = toRTVal( vars );
-  if (val.isValid())
-    m_exec.setPortDefaultValue( m_cname.c_str(), val, commit );
+  const char* ctype = m_exec.getExecPortResolvedType( m_cname.c_str() );
+  if (ctype != NULL)
+  {
+    FabricCore::RTVal val = m_exec.getPortDefaultValue( m_cname.c_str(), ctype );
+    if (RTVariant::toRTVal( vars, val ))
+      m_exec.setPortDefaultValue( m_cname.c_str(), val, commit );
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -230,7 +233,16 @@ QVariant ArgModelItem::GetValue()
 
 void ArgModelItem::onViewValueChanged( QVariant const& var, bool commit )
 {
-  FabricCore::RTVal val = toRTVal( var );
-  if (val.isValid())
+  // We get the value of the argument to ensure we
+  // have an entity of the appropriate type.  This is because
+  // we do not know what the type of the incoming value is
+  // For example, we could create a port of type Float, but
+  // the UI will build a Double slider, and send us a Double
+  // In this case, the core will complain if we built a RTVal
+  // from this type and tried to set it (because mis-matched type).
+  FabricCore::RTVal val = m_binding.getArgValue( m_cname.c_str() );
+  if (RTVariant::toRTVal( var, val ) )
+  {
     m_binding.setArgValue( m_cname.c_str(), val, commit );
+  }
 }
