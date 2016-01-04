@@ -3,12 +3,13 @@
 //
 
 #include "CanvasMainWindow.h"
-#include "ModelItems.h"
 
 #include <FabricServices/Persistence/RTValToJSONEncoder.hpp>
 #include <FabricServices/Persistence/RTValFromJSONDecoder.hpp>
 #include <FabricUI/Licensing/Licensing.h>
 #include <FabricUI/DFG/DFGActions.h>
+#include <FabricUI/DFG/DFGHotkeys.h>
+#include <FabricUI/ModelItems/ModelItems.h>
 
 #include <FTL/CStrRef.h>
 #include <FTL/FS.h>
@@ -48,7 +49,7 @@ void MainWindow::CoreStatusCallback(
   {
     try
     {
-      FabricUI::HandleLicenseData(
+      FabricUI_HandleLicenseData(
         mainWindow,
         mainWindow->m_client,
         payload,
@@ -324,7 +325,7 @@ MainWindow::MainWindow(
     addDockWidget( Qt::RightDockWidgetArea, dfgValueEditorDockWidget );
 
     // log widget
-    m_logWidget = new DFG::DFGLogWidget;
+    m_logWidget = new DFG::DFGLogWidget( config );
     QDockWidget *logDockWidget = new QDockWidget( "Log Messages", this );
     logDockWidget->setObjectName( "Log" );
     logDockWidget->setFeatures( dockFeatures );
@@ -351,7 +352,7 @@ MainWindow::MainWindow(
       this, SLOT( onArgInserted( int, const char*, const char* ) )
       );
     QObject::connect(
-      this, SIGNAL( modelItemInserted(BaseModelItem*, int, const char*) ),
+      this, SIGNAL( modelItemInserted( BaseModelItem*, int, const char*) ),
       m_dfgValueEditor, SLOT( onModelItemChildInserted( BaseModelItem*, int, const char* ) )
       );
     QObject::connect(
@@ -522,23 +523,23 @@ MainWindow::~MainWindow()
 
 void MainWindow::onHotkeyPressed(Qt::Key key, Qt::KeyboardModifier modifiers, QString hotkey)
 {
-  if(hotkey == DFG_EXECUTE)
+  if(hotkey == FabricUI::DFG::DFGHotkeys::EXECUTE)
   {
     onDirty();
   }
-  else if(hotkey == DFG_NEW_SCENE)
+  else if(hotkey == FabricUI::DFG::DFGHotkeys::NEW_SCENE)
   {
     onNewGraph();
   }
-  else if(hotkey == DFG_OPEN_SCENE)
+  else if(hotkey == FabricUI::DFG::DFGHotkeys::OPEN_SCENE)
   {
     onLoadGraph();
   }
-  else if(hotkey == DFG_SAVE_SCENE)
+  else if(hotkey == FabricUI::DFG::DFGHotkeys::SAVE_SCENE)
   {
     saveGraph(false);
   }
-  else if(hotkey == DFG_TOGGLE_MANIPULATION)
+  else if(hotkey == FabricUI::DFG::DFGHotkeys::TOGGLE_MANIPULATION)
   {
     // Make sure we use the Action path, so menu's "checked" state is updated
     if( m_manipAction )
@@ -766,26 +767,26 @@ void MainWindow::onGraphSet(FabricUI::GraphView::Graph * graph)
   if(graph != m_setGraph)
   {
     GraphView::Graph * graph = m_dfgWidget->getUIGraph();
-    graph->defineHotkey(Qt::Key_Delete,     Qt::NoModifier,       DFG_DELETE);
-    graph->defineHotkey(Qt::Key_Backspace,  Qt::NoModifier,       DFG_DELETE_2);
-    graph->defineHotkey(Qt::Key_F5,         Qt::NoModifier,       DFG_EXECUTE);
-    graph->defineHotkey(Qt::Key_F,          Qt::NoModifier,       DFG_FRAME_SELECTED);
-    graph->defineHotkey(Qt::Key_A,          Qt::NoModifier,       DFG_FRAME_ALL);
-    graph->defineHotkey(Qt::Key_Tab,        Qt::NoModifier,       DFG_TAB_SEARCH);
-    graph->defineHotkey(Qt::Key_A,          Qt::ControlModifier,  DFG_SELECT_ALL);
-    graph->defineHotkey(Qt::Key_C,          Qt::ControlModifier,  DFG_COPY);
-    graph->defineHotkey(Qt::Key_V,          Qt::ControlModifier,  DFG_PASTE);
-    graph->defineHotkey(Qt::Key_X,          Qt::ControlModifier,  DFG_CUT);
-    graph->defineHotkey(Qt::Key_N,          Qt::ControlModifier,  DFG_NEW_SCENE);
-    graph->defineHotkey(Qt::Key_O,          Qt::ControlModifier,  DFG_OPEN_SCENE);
-    graph->defineHotkey(Qt::Key_S,          Qt::ControlModifier,  DFG_SAVE_SCENE);
-    graph->defineHotkey(Qt::Key_F2,         Qt::NoModifier,       DFG_EDIT_PROPERTIES);
-    graph->defineHotkey(Qt::Key_R,          Qt::ControlModifier,  DFG_RELAX_NODES);
-    graph->defineHotkey(Qt::Key_Q,          Qt::NoModifier,       DFG_TOGGLE_MANIPULATION);
-    graph->defineHotkey(Qt::Key_0,          Qt::ControlModifier,  DFG_RESET_ZOOM);
-    graph->defineHotkey(Qt::Key_1,          Qt::NoModifier,       DFG_COLLAPSE_LEVEL_1);
-    graph->defineHotkey(Qt::Key_2,          Qt::NoModifier,       DFG_COLLAPSE_LEVEL_2);
-    graph->defineHotkey(Qt::Key_3,          Qt::NoModifier,       DFG_COLLAPSE_LEVEL_3);
+    graph->defineHotkey(Qt::Key_Delete,     Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::DELETE_1);
+    graph->defineHotkey(Qt::Key_Backspace,  Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::DELETE_2);
+    graph->defineHotkey(Qt::Key_F5,         Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::EXECUTE);
+    graph->defineHotkey(Qt::Key_F,          Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::FRAME_SELECTED);
+    graph->defineHotkey(Qt::Key_A,          Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::FRAME_ALL);
+    graph->defineHotkey(Qt::Key_Tab,        Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::TAB_SEARCH);
+    graph->defineHotkey(Qt::Key_A,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::SELECT_ALL);
+    graph->defineHotkey(Qt::Key_C,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::COPY);
+    graph->defineHotkey(Qt::Key_V,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::PASTE);
+    graph->defineHotkey(Qt::Key_X,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::CUT);
+    graph->defineHotkey(Qt::Key_N,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::NEW_SCENE);
+    graph->defineHotkey(Qt::Key_O,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::OPEN_SCENE);
+    graph->defineHotkey(Qt::Key_S,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::SAVE_SCENE);
+    graph->defineHotkey(Qt::Key_F2,         Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::EDIT_PROPERTIES);
+    graph->defineHotkey(Qt::Key_R,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::RELAX_NODES);
+    graph->defineHotkey(Qt::Key_Q,          Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::TOGGLE_MANIPULATION);
+    graph->defineHotkey(Qt::Key_0,          Qt::ControlModifier,  FabricUI::DFG::DFGHotkeys::RESET_ZOOM);
+    graph->defineHotkey(Qt::Key_1,          Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::COLLAPSE_LEVEL_1);
+    graph->defineHotkey(Qt::Key_2,          Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::COLLAPSE_LEVEL_2);
+    graph->defineHotkey(Qt::Key_3,          Qt::NoModifier,       FabricUI::DFG::DFGHotkeys::COLLAPSE_LEVEL_3);
 
     // we don't need to connect this signal, because we are invoking the slot
     // in our own hotkeypressed method          
@@ -815,7 +816,7 @@ void MainWindow::onNodeInspectRequested(
 
   FabricCore::DFGExec exec = dfgController->getExec();
   FabricCore::DFGExec subExec = exec.getSubExec( node->title().c_str() );
-  m_modelRoot = new ExecModelItem( subExec );
+  m_modelRoot = new FabricUI::ModelItems::ExecModelItem( subExec );
   emit replaceModelRoot(m_modelRoot);
 }
 
@@ -835,13 +836,13 @@ void MainWindow::onSidePanelInspectRequested()
   if (path.empty())
   {
     FabricCore::DFGBinding binding = dfgController->getBinding();
-    m_modelRoot = new BindingModelItem( binding );
+    m_modelRoot = new FabricUI::ModelItems::BindingModelItem( binding );
     emit replaceModelRoot( m_modelRoot );
   }
   else
   {
     FabricCore::DFGExec exec = dfgController->getExec();
-    m_modelRoot = new ExecModelItem( exec );
+    m_modelRoot = new FabricUI::ModelItems::ExecModelItem( exec );
     emit replaceModelRoot( m_modelRoot );
   }
 
@@ -1237,7 +1238,7 @@ void MainWindow::onAdditionalMenuActionsRequested(QString name, QMenu * menu, bo
     else
     {
       menu->addSeparator();
-      m_manipAction = new QAction( DFG_TOGGLE_MANIPULATION, m_viewport );
+      m_manipAction = new QAction( FabricUI::DFG::DFGHotkeys::TOGGLE_MANIPULATION, m_viewport );
       m_manipAction->setShortcut(Qt::Key_Q);
       m_manipAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
       m_manipAction->setCheckable( true );

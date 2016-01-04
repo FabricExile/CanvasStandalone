@@ -30,8 +30,14 @@ using namespace FabricUI;
 class MainWindow;
 class QUndoView;
 class VETreeWidget;
+
 class BaseModelItem;
-class ExecModelItem;
+
+namespace FabricUI {
+  namespace ModelItems {
+    class ExecModelItem;
+  }
+}
 
 class MainWindowEventFilter : public QObject
 {
@@ -52,7 +58,7 @@ class MainWindow : public DFG::DFGMainWindow
 
   friend class MainWindowEventFilter;
   
-  ExecModelItem* m_modelRoot;
+  FabricUI::ModelItems::ExecModelItem* m_modelRoot;
 public:
 
   MainWindow(
@@ -101,11 +107,11 @@ private slots:
 signals:
   void contentChanged();
 
-  void replaceModelRoot(BaseModelItem* model);
+  void replaceModelRoot( BaseModelItem* model);
 
-  void modelItemInserted(BaseModelItem* parent, int index, const char* childName);
-  void modelItemTypeChange(BaseModelItem* changingItem, const char* newType);
-  void modelItemRemoved(BaseModelItem* removedItem);
+  void modelItemInserted( BaseModelItem* parent, int index, const char* childName);
+  void modelItemTypeChange( BaseModelItem* changingItem, const char* newType);
+  void modelItemRemoved( BaseModelItem* removedItem);
   void modelItemChildrenReordered( BaseModelItem* parent, const QList<int>& newOrder );
 
 protected:
