@@ -815,7 +815,7 @@ void MainWindow::onNodeInspectRequested(
     m_dfgWidget->getUIController();
 
   FabricCore::DFGExec exec = dfgController->getExec();
-  FabricCore::DFGExec subExec = exec.getSubExec( node->title().c_str() );
+  FabricCore::DFGExec subExec = exec.getSubExec( node->name().c_str() );
   m_modelRoot = new FabricUI::ModelItems::ExecModelItem( subExec );
   emit replaceModelRoot(m_modelRoot);
 }
