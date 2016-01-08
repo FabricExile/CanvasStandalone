@@ -129,23 +129,27 @@ sources += Flatten(env.GlobQObjectSources('*.h'))
 canvasFiles = env.Program('canvas', sources)
 canvasAlias = env.Alias('canvas', canvasFiles)
 
-cs = []
-for s in sources:
-  cs.append(str(s))
-print cs
-
-hs = []
-for s in headers:
-  hs.append(str(s))
-
 env.Default(canvasAlias)
 
 if platform.system() == 'Windows':
-  # Build a VS project to go along with this dll
-  # We can use this for debugging the project later.
-  res = env.MSVSProject(target = 'canvas' + env['MSVSPROJECTSUFFIX'],
-                  srcs = cs,
-                  incs = hs,
-                  buildtarget = canvasFiles[0],
-                  variant = 'Debug|x64')
-  print res
+
+  projName = 'Canvas.vcxproj'# + env['MSVSPROJECTSUFFIX']
+  projNode = Dir('#').File(projName)
+  if not projNode.exists():
+    # Build a VS project to go along with this dll
+    # We can use this for debugging the project later.
+    cs = []
+    for s in sources:
+      cs.append(str(s))
+    print cs
+
+    hs = []
+    for s in headers:
+      hs.append(str(s))
+    vsproj = env.MSVSProject(target = 'Canvas' + env['MSVSPROJECTSUFFIX'],
+                    srcs = cs,
+                    incs = hs,
+                    buildtarget = canvasFiles[0],
+                    auto_build_solution=0,
+                    variant = 'Debug|x64')
+    env.Depends(canvasFiles, vsproj)
